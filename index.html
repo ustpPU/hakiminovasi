@@ -27,7 +27,7 @@
     @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
   </style>
 </head>
-<body class="min-h-screen text-slate-800 overflow-x-hidden">
+<body class="min-h-screen text-slate-800 overflow-x-hidden flex flex-col">
   <header class="hero-pattern text-white shadow-lg">
     <div class="max-w-5xl mx-auto px-4 py-5 md:py-6 text-center">
       <p class="text-indigo-200 text-[10px] md:text-xs font-black tracking-[.18em] uppercase">Kementerian Pendidikan | PPD Petaling Utama</p>
@@ -36,7 +36,7 @@
     </div>
   </header>
 
-  <main class="max-w-7xl mx-auto px-3 sm:px-4 py-5 md:py-8">
+  <main class="w-full max-w-7xl mx-auto px-3 sm:px-4 py-5 md:py-8 flex-1">
     <nav class="glass rounded-xl shadow-sm border border-indigo-100 p-1 mb-6 flex gap-1.5 max-w-5xl mx-auto">
       <button id="tab-evaluation" onclick="showView('evaluation')" class="flex-1 rounded-lg px-2 sm:px-4 py-3 text-xs sm:text-sm font-black bg-indigo-700 text-white">Pengisian Markah</button>
       <button id="tab-ranking" onclick="showView('ranking')" class="flex-1 rounded-lg px-2 sm:px-4 py-3 text-xs sm:text-sm font-black text-slate-600 hover:bg-slate-100">Senarai Keputusan</button>
@@ -49,14 +49,14 @@
 
     <section id="evaluation-view" class="hidden fade-in max-w-6xl mx-auto">
       <div class="bg-white rounded-2xl border border-indigo-100 shadow-sm p-4 md:p-5 mb-4">
-        <div class="grid md:grid-cols-[minmax(0,1fr),minmax(280px,.7fr)] md:items-end gap-4">
-          <div>
+        <div class="max-w-xl mx-auto">
+          <div class="text-center">
             <label for="judge-select" class="block text-xs font-black tracking-wider text-indigo-600 uppercase mb-2">Hakim</label>
             <select id="judge-select" onchange="selectJudge()" class="w-full rounded-xl border-2 border-slate-200 px-3 py-3 text-sm font-bold focus:border-indigo-500 focus:ring-0">
               <option value="">— Pilih hakim —</option>
             </select>
           </div>
-          <div id="judge-info" class="hidden rounded-xl bg-indigo-50 border border-indigo-100 px-4 py-3">
+          <div id="judge-info" class="hidden mt-4 rounded-xl bg-indigo-50 border border-indigo-100 px-4 py-3 text-left">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-3">
               <p id="judge-category" class="font-black text-indigo-900"></p>
               <p id="judge-progress" class="text-xs font-bold text-slate-600 sm:whitespace-nowrap">0/15 kumpulan telah dinilai</p>
@@ -122,21 +122,14 @@
         </div>
       </div>
       <div id="ranking-status" class="mb-4"></div>
-      <div id="ranking-cards" class="grid sm:grid-cols-2 gap-3 lg:hidden"></div>
-      <div class="hidden lg:block bg-white rounded-2xl border border-indigo-100 shadow-sm overflow-hidden">
-          <table class="w-full table-fixed text-xs">
-            <colgroup><col class="w-[9%]"><col class="w-[38%]"><col class="w-[8%]"><col class="w-[8%]"><col class="w-[8%]"><col class="w-[14%]"><col class="w-[15%]"></colgroup>
-            <thead class="bg-slate-50 text-slate-600 text-[10px] uppercase"><tr><th class="p-2 text-center">Kedudukan</th><th class="p-2 text-left">Kumpulan dan Tajuk Inovasi</th><th class="p-2 text-center">H1</th><th class="p-2 text-center">H2</th><th class="p-2 text-center">H3</th><th class="p-2 text-center">Jumlah</th><th class="p-2 text-center">Anugerah</th></tr></thead>
-            <tbody id="ranking-body"></tbody>
-          </table>
-      </div>
+      <div id="ranking-groups" class="space-y-5"></div>
       <div class="mt-4 rounded-xl bg-amber-50 border border-amber-200 p-4 text-xs text-amber-900 leading-relaxed">
         <strong>Tie-break:</strong> jumlah keseluruhan, diikuti Kreativiti, Kebolehlaksanaan, Keberkesanan Pengajaran, Keberkesanan Pembelajaran, Potensi Penyebaran dan Keberkesanan Kos. Persamaan tepat memerlukan keputusan bersama panel.
       </div>
     </section>
   </main>
 
-  <footer class="text-center text-xs text-slate-400 px-4 py-8">Sistem Penghakiman Inovasi Guru • PUICE 2026</footer>
+  <footer class="mt-auto border-t border-slate-200 bg-white text-center text-xs text-slate-500 px-4 py-5">© Unit Sumber Teknologi Pendidikan PPDPU | PUICE 2026</footer>
 
   <script>
     const API_URL = 'https://script.google.com/macros/s/AKfycbzZGgorv67l-ETOvrfc_E88ilaS21YZRpS54Oof-SfXalEx069acDW1xR3lj7XfrRzMCQ/exec';
@@ -300,14 +293,20 @@
       const exactTie = rows.some(item => item.exactTie);
       document.getElementById('ranking-status').innerHTML = `<div class="rounded-xl border p-3 sm:p-4 text-xs sm:text-sm font-bold ${complete ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-blue-50 border-blue-200 text-blue-900'}">${complete ? 'Semua penilaian lengkap. Ranking dan anugerah boleh dimuktamadkan.' : `Ranking sementara disusun berdasarkan jumlah markah semasa yang telah diterima. ${rows.filter(item => item.complete).length}/${rows.length} kumpulan telah menerima markah lengkap daripada tiga hakim. Kedudukan boleh berubah sehingga semua penilaian selesai.`}${exactTie ? '<br>Terdapat persamaan tepat yang memerlukan keputusan bersama panel.' : ''}</div>`;
       const judges = appData.judges[rankingCategory];
-      document.getElementById('ranking-body').innerHTML = rows.map(item => {
-        const members = String(item.namaPeserta || '').split(',').map(name => name.trim()).filter(Boolean).map(name => `<div>${escapeHtml(name)}</div>`).join('');
-        return `<tr class="border-t border-slate-100 hover:bg-slate-50"><td class="p-2 text-center"><div class="font-black text-lg text-indigo-700">${item.rank}</div><div class="text-[9px] font-bold ${item.complete ? 'text-emerald-600' : 'text-rose-500'}">${item.completedJudges}/3</div></td><td class="p-2 break-words"><div class="font-black text-slate-900 leading-snug">${escapeHtml(item.tajuk)}</div><div class="text-[10px] text-slate-500 mt-1 leading-relaxed">${members}</div><div class="text-[10px] font-bold text-indigo-600 mt-1">${escapeHtml(item.sekolah)}</div></td>${judges.map(judge => `<td class="p-2 text-center font-black">${item.judgeScores[judge] == null ? '<span class="text-slate-300">—</span>' : item.judgeScores[judge]}</td>`).join('')}<td class="p-2 text-center"><span class="text-lg font-black text-emerald-700">${item.total}</span><span class="text-[9px] text-slate-400 block">/300</span></td><td class="p-2 text-center"><span class="inline-block rounded-full px-2 py-1 text-[9px] font-black award-${item.award.toLowerCase()}">${item.award}</span></td></tr>`;
-      }).join('');
-      document.getElementById('ranking-cards').innerHTML = rows.map(item => {
-        const members = String(item.namaPeserta || '').split(',').map(name => name.trim()).filter(Boolean).map(name => `<div>${escapeHtml(name)}</div>`).join('');
-        const scores = judges.map((judge, index) => `<div class="rounded-lg bg-slate-50 border border-slate-100 p-2 text-center"><div class="text-[9px] font-black text-slate-400">H${index + 1}</div><div class="font-black text-slate-800 mt-0.5">${item.judgeScores[judge] == null ? '—' : item.judgeScores[judge]}</div></div>`).join('');
-        return `<article class="bg-white rounded-xl border border-indigo-100 shadow-sm p-4 min-w-0"><div class="flex items-start justify-between gap-3"><div class="w-9 h-9 shrink-0 rounded-lg bg-indigo-100 text-indigo-700 grid place-items-center font-black">${item.rank}</div><span class="rounded-full px-2.5 py-1 text-[9px] font-black award-${item.award.toLowerCase()}">${item.award}</span></div><h3 class="font-black text-sm text-slate-900 leading-snug mt-3 break-words">${escapeHtml(item.tajuk)}</h3><div class="text-[11px] text-slate-500 leading-relaxed mt-2">${members}</div><div class="text-[10px] font-bold text-indigo-600 mt-2 break-words">${escapeHtml(item.sekolah)}</div><div class="grid grid-cols-3 gap-2 mt-3">${scores}</div><div class="mt-3 pt-3 border-t border-slate-100 flex items-end justify-between"><span class="text-[10px] font-bold ${item.complete ? 'text-emerald-600' : 'text-rose-500'}">${item.completedJudges}/3 hakim</span><div><span class="text-xl font-black text-emerald-700">${item.total}</span><span class="text-[10px] text-slate-400">/300</span></div></div></article>`;
+      const awardGroups = [
+        { key: 'PLATINUM', label: 'PLATINUM', barClass: 'award-platinum' },
+        { key: 'EMAS', label: 'EMAS', barClass: 'award-emas' },
+        { key: 'PERAK', label: 'PERAK', barClass: 'award-perak' },
+        { key: 'GANGSA', label: 'GANGSA', barClass: 'award-gangsa' }
+      ];
+      document.getElementById('ranking-groups').innerHTML = awardGroups.map(group => {
+        const groupRows = rows.filter(item => item.award === group.key);
+        const cards = groupRows.map(item => {
+          const members = String(item.namaPeserta || '').split(',').map(name => name.trim()).filter(Boolean).map(name => `<div>${escapeHtml(name)}</div>`).join('');
+          const scores = judges.map((judge, index) => `<div class="rounded-lg bg-slate-50 border border-slate-100 p-2 text-center"><div class="text-[9px] font-black text-slate-400">H${index + 1}</div><div class="font-black text-slate-800 mt-0.5">${item.judgeScores[judge] == null ? '—' : item.judgeScores[judge]}</div></div>`).join('');
+          return `<article class="bg-white rounded-xl border border-indigo-100 shadow-sm p-4 min-w-0"><div class="w-9 h-9 rounded-lg bg-indigo-100 text-indigo-700 grid place-items-center font-black">${item.rank}</div><h3 class="font-black text-sm text-slate-900 leading-snug mt-3 break-words">${escapeHtml(item.tajuk)}</h3><div class="text-[11px] text-slate-500 leading-relaxed mt-2">${members}</div><div class="text-[10px] font-bold text-indigo-600 mt-2 break-words">${escapeHtml(item.sekolah)}</div><div class="grid grid-cols-3 gap-2 mt-3">${scores}</div><div class="mt-3 pt-3 border-t border-slate-100 flex items-end justify-between"><span class="text-[10px] font-bold ${item.complete ? 'text-emerald-600' : 'text-rose-500'}">${item.completedJudges}/3 hakim</span><div><span class="text-xl font-black text-emerald-700">${item.total}</span><span class="text-[10px] text-slate-400">/300</span></div></div></article>`;
+        }).join('');
+        return `<section><div class="${group.barClass} rounded-xl px-4 py-3 text-center text-sm font-black tracking-[.16em] shadow-sm">${group.label}</div><div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-3 mt-3">${cards}</div></section>`;
       }).join('');
     }
 
