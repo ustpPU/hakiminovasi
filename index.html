@@ -22,8 +22,6 @@
     .award-emas { background: #fbbf24; color: #422006; }
     .award-perak { background: #cbd5e1; color: #1e293b; }
     .award-gangsa { background: #f97316; color: #fff; }
-    input[type=number] { appearance: textfield; }
-    input[type=number]::-webkit-inner-spin-button { opacity: 1; }
     .fade-in { animation: fadeIn .25s ease-out; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
   </style>
@@ -235,12 +233,30 @@
       document.getElementById('form-school').textContent = selectedParticipant.sekolah;
       document.getElementById('judge-comment').value = '';
       document.getElementById('comment-count').textContent = '0';
-      document.getElementById('rubric-fields').innerHTML = appData.rubric.map((item, index) => `<div class="rounded-xl border border-slate-200 p-4 md:p-5"><div class="flex flex-col sm:flex-row sm:items-center gap-3 justify-between"><div class="flex gap-3"><span class="w-8 h-8 shrink-0 rounded-full bg-indigo-100 text-indigo-700 grid place-items-center font-black text-sm">${index + 1}</span><div><label for="score-${item.key}" class="font-black text-sm sm:text-base text-slate-800">${escapeHtml(item.label)}</label></div></div><div class="flex items-center gap-2 sm:ml-4"><input required id="score-${item.key}" data-score type="number" inputmode="numeric" min="0" max="${item.max}" step="5" placeholder="0" oninput="calculateTotal()" class="w-24 rounded-xl border-2 border-slate-200 px-3 py-2.5 text-right text-lg font-black focus:border-indigo-500"><span class="font-bold text-slate-400">/ ${item.max}</span></div></div></div>`).join('');
+      document.getElementById('rubric-fields').innerHTML = appData.rubric.map((item, index) => `<div class="rounded-xl border border-slate-200 p-4 md:p-5"><div class="flex flex-col sm:flex-row sm:items-center gap-3 justify-between"><div class="flex gap-3"><span class="w-8 h-8 shrink-0 rounded-full bg-indigo-100 text-indigo-700 grid place-items-center font-black text-sm">${index + 1}</span><div><label for="score-${item.key}" class="font-black text-sm sm:text-base text-slate-800">${escapeHtml(item.label)}</label></div></div><div class="sm:ml-4"><div class="flex items-center gap-2"><input required id="score-${item.key}" data-score data-max="${item.max}" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="0" oninput="validateScoreInput(this, ${item.max})" class="w-24 rounded-xl border-2 border-slate-200 px-3 py-2.5 text-right text-lg font-black focus:border-indigo-500"><span class="font-bold text-slate-400">/ ${item.max}</span></div><p id="score-error-${item.key}" class="hidden text-[10px] font-bold text-rose-600 mt-1 text-right">Maksimum ${item.max}</p></div></div></div>`).join('');
       calculateTotal();
       requestAnimationFrame(() => document.getElementById('score-form-panel').scrollIntoView({ behavior: 'smooth', block: 'start' }));
     }
 
     function backToProjects() { selectedParticipant = null; document.getElementById('score-form-panel').classList.add('hidden'); document.getElementById('project-list-panel').classList.remove('hidden'); }
+    function validateScoreInput(input, max) {
+      const digits = input.value.replace(/\D/g, '');
+      const error = document.getElementById(`score-error-${input.id.replace('score-', '')}`);
+      if (!digits) {
+        input.value = '';
+        input.classList.remove('border-rose-400', 'bg-rose-50');
+        error.classList.add('hidden');
+        calculateTotal();
+        return;
+      }
+      const exceeded = Number(digits) > max;
+      input.value = exceeded ? String(max) : String(Number(digits));
+      input.classList.toggle('border-rose-400', exceeded);
+      input.classList.toggle('bg-rose-50', exceeded);
+      error.classList.toggle('hidden', !exceeded);
+      calculateTotal();
+    }
+
     function calculateTotal() {
       const inputs = [...document.querySelectorAll('[data-score]')];
       const total = inputs.reduce((sum, input) => sum + (Number(input.value) || 0), 0);
@@ -252,7 +268,11 @@
     async function clearScores() {
       const result = await Swal.fire({ icon: 'warning', title: 'Kosongkan semua markah?', text: 'Semua markah dan catatan yang sedang diisi akan dipadam.', showCancelButton: true, confirmButtonText: 'Ya, kosongkan', cancelButtonText: 'Batal', confirmButtonColor: '#e11d48' });
       if (!result.isConfirmed) return;
-      document.querySelectorAll('[data-score]').forEach(input => input.value = '');
+      document.querySelectorAll('[data-score]').forEach(input => {
+        input.value = '';
+        input.classList.remove('border-rose-400', 'bg-rose-50');
+      });
+      document.querySelectorAll('[id^="score-error-"]').forEach(error => error.classList.add('hidden'));
       document.getElementById('judge-comment').value = '';
       document.getElementById('comment-count').textContent = '0';
       calculateTotal();
@@ -261,10 +281,20 @@
     async function submitScore(event) {
       event.preventDefault();
       if (!selectedParticipant || !selectedJudge) return;
-      const scores = {}; appData.rubric.forEach(item => scores[item.key] = Number(document.getElementById(`score-${item.key}`).value));
+      const scores = {};
+      for (const item of appData.rubric) {
+        const raw = document.getElementById(`score-${item.key}`).value;
+        const value = Number(raw);
+        if (raw === '' || !Number.isInteger(value) || value < 0 || value > item.max) {
+          await Swal.fire({ icon: 'error', title: 'Semak markah', text: `${item.label}: masukkan nombor bulat antara 0 hingga ${item.max}.`, confirmButtonColor: '#4338ca' });
+          return;
+        }
+        scores[item.key] = value;
+      }
       const comment = document.getElementById('judge-comment').value.trim();
       const total = Object.values(scores).reduce((sum, value) => sum + value, 0);
-      const confirmation = await Swal.fire({ icon: 'question', title: 'Hantar markah?', html: `<b>${escapeHtml(selectedParticipant.tajuk)}</b><br><span style="font-size:13px">Jumlah: ${total}/100</span>`, showCancelButton: true, confirmButtonText: 'Ya, hantar', cancelButtonText: 'Semak semula', confirmButtonColor: '#4338ca' });
+      const summaryRows = appData.rubric.map(item => `<div style="display:flex;justify-content:space-between;gap:16px;padding:8px 0;border-bottom:1px solid #e2e8f0;text-align:left"><span style="font-size:12px;color:#475569">${escapeHtml(item.label)}</span><strong style="white-space:nowrap;color:#1e293b">${scores[item.key]} / ${item.max}</strong></div>`).join('');
+      const confirmation = await Swal.fire({ icon: 'question', title: 'Sahkan markah', width: 560, html: `<div style="text-align:left"><div style="padding:12px;border-radius:10px;background:#eef2ff;margin-bottom:12px"><div style="font-size:11px;font-weight:800;color:#6366f1;text-transform:uppercase">Kumpulan</div><div style="font-weight:800;color:#1e293b;margin-top:3px">${escapeHtml(selectedParticipant.tajuk)}</div></div>${summaryRows}<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0 2px"><strong style="font-size:13px;color:#047857">JUMLAH MARKAH</strong><strong style="font-size:24px;color:#047857">${total} / 100</strong></div></div>`, showCancelButton: true, confirmButtonText: 'Ya, Simpan Markah', cancelButtonText: 'Semak Semula', reverseButtons: true, focusCancel: true, confirmButtonColor: '#4338ca' });
       if (!confirmation.isConfirmed) return;
       const button = document.getElementById('submit-button'); button.disabled = true; button.textContent = 'Sedang menyimpan…';
       try {
